@@ -1,0 +1,206 @@
+from enum import Enum
+
+class Department(Enum):
+    '''enumerations for the departments in the hospital'''
+    ONCOLOGY = "Oncology"
+    CARDIOLOGY = "Cardiology"
+    RADIOLOGY = "Radiology"
+    DERMATOLOGY = "Dermatology"
+    ORTHOPEDICS = "Orthopedics"
+
+class ServiceCharges(Enum):
+    '''enumerations for the hospital service charges'''
+    DOCTOR_CONSULTATION = 150
+    NURSING_SERVICES = 120
+    HOSPITAL_CHARGES = 320
+    PHARMACY = 415
+    ROOM_CHARGES = 160
+
+class InsuranceCover(Enum):
+    '''enumerations for the insurance cover options'''
+    NONE = "None"
+    FULL = "Full"
+    HALF = "Half"
+
+class User:
+    '''class to define a hospital user'''
+    def __init__(self, fName ='', lName='', dob='', id='', contact=''):
+        self.fName = fName
+        self.lName = lName
+        self.dob = dob
+        self.id = id
+        self.contact = contact
+
+    # Getter methods
+    def get_fName(self):
+        return self.fName
+
+    def get_lName(self):
+        return self.lName
+
+    def get_dob(self):
+        return self.dob
+
+    def get_id(self):
+        return self.id
+
+    def get_contact(self):
+        return self.contact
+
+    # Setter methods
+    def set_fName(self, fName):
+        self.fName = fName
+
+    def set_lName(self, lName):
+        self.lName = lName
+
+    def set_dob(self, dob):
+        self.dob = dob
+
+    def set_id(self, id):
+        self.id = id
+
+    def set_contact(self, contact):
+        self.contact = contact
+
+    # Display the details of a user
+    def displayUser(self):
+        return "Name: {} {}\nID: {}\nContact: {}".format(self.fName, self.lName, self.id, self.contact)
+
+class Doctor(User):
+    '''class to define a doctor'''
+    def __init__(self, fName ='', lName='', dob='', id='', contact='', department=None):
+        User.__init__(self, fName, lName, dob, id, contact)
+        self.department = department
+
+    # Getter methods
+    def get_department(self):
+        return self.department
+
+    # Setter methods
+    def set_department(self, department):
+        self.department = department
+
+    def displayDoctor(self):
+        return "{}\nDepartment: {}".format(self.displayUser(), self.department.value)
+
+class Nurse(User):
+    '''class to define a nurse'''
+    def __init__(self, fName='', lName='', dob='', id='', contact='', department=None):
+        User.__init__(self, fName, lName, dob, id, contact)
+        self.department = department
+
+    # Getter methods
+    def get_department(self):
+        return self.department
+
+    # Setter methods
+    def set_department(self, department):
+        self.department = department
+
+    def displayNurse(self):
+        return "{}\nDepartment: {}".format(self.displayUser(), self.department.value)
+
+class Patient(User):
+    '''class to define a patient'''
+    def __init__(self, fName='', lName='', dob='', id='', contact='', insuranceID='', insuranceCover=None):
+        User.__init__(self, fName, lName, dob, id, contact)
+        self.insuranceID = insuranceID
+        self.insuranceCover = insuranceCover
+        self.appointments = []
+
+    # Getter methods
+    def get_insuranceID(self):
+        return self.insuranceID
+
+    def get_insuranceCover(self):
+        return self.insuranceCover
+
+    # Setter methods
+    def set_insuranceID(self, insuranceID):
+        self.insuranceID = insuranceID
+
+    def set_insuranceCover(self, insuranceCover):
+        self.insuranceCover = insuranceCover
+
+    def bookAppointment(self, appointment):
+        # Add the appointment to the patient's list of appointments
+        self.appointments.append(appointment)
+
+    def listAppointments(self):
+        # Display the list of appointments for the patient
+        if not self.appointments:
+            return "No appointments booked."
+        else:
+            appointment_list = "\n".join([appointment.appDate for appointment in self.appointments])
+            return f"Appointments:\n{appointment_list}"
+
+class Appointment:
+    '''class to define an appointment'''
+    def __init__(self, appDate='', room='', charges = None, description='', patient='', doctor='', nurse=''):
+        self.appDate = appDate
+        self.room = room
+        self.charges = charges if charges is not None else []
+        self.description = description
+        self.doctor = doctor
+        self.patient = patient
+        self.nurse = nurse
+
+    def generateReceipt(self):
+        total_amount = sum([charge.value for charge in self.charges])
+        insurance_cover_discount = 0
+
+        if self.patient.get_insuranceCover() == InsuranceCover.FULL:
+            insurance_cover_discount = total_amount
+        elif self.patient.get_insuranceCover() == InsuranceCover.HALF:
+            insurance_cover_discount = total_amount / 2
+
+        final_amount = total_amount - insurance_cover_discount
+
+        receipt = """
+        Medical Service Billing
+        Appointment Date: {}
+        ---------------------------------
+        {}
+        Insurance ID: {}
+        ---------------------------------
+        {}
+        {}
+        Room: {}
+        Description: {}
+        ---------------------------------
+        Service Charges:
+        """.format(self.appDate, self.patient.displayUser(), self.patient.get_insuranceID(),
+                   self.doctor.displayDoctor(), self.nurse.displayNurse(), self.room, self.description)
+
+        for charge in self.charges:
+            receipt += "\n{}: {}".format(charge.name.replace('_', ' '), charge.value)
+
+        receipt += """
+        ---------------------------------
+        Total: {}
+        Insurance Cover: {}
+        ---------------------------------
+        Final Amount: {}
+        """.format(total_amount, self.patient.get_insuranceCover().value, final_amount)
+
+        return receipt
+
+# Example Usage:
+patient = Patient("James", "W. Jones", "01-01-1980", "ID12345", "816-897-9862", "729-290300-902-9",
+                        InsuranceCover.HALF)
+doctor = Doctor("Hassan", "Khalid", "01-01-1970", "G08984", "123-456-7890", Department.ONCOLOGY)
+nurse = Nurse("Adey", "George", "01-01-1985", "KL833", "098-765-4321", Department.ONCOLOGY)
+
+appointment = Appointment(
+    "13 March 2023, 23:35:00",
+    "OP304",
+    [ServiceCharges.DOCTOR_CONSULTATION, ServiceCharges.NURSING_SERVICES, ServiceCharges.HOSPITAL_CHARGES, ServiceCharges.PHARMACY, ServiceCharges.ROOM_CHARGES],
+    "Post-operative care",
+    patient,
+    doctor,
+    nurse)
+
+print(appointment.generateReceipt())
+
+
